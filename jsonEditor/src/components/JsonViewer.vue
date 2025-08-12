@@ -61,6 +61,48 @@ function updateValue(value: string | undefined, needFormat: boolean = false) {
 function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
+function superFormatX2(v2:{[key: string]: any}):any {
+  for (const xx in v2) {
+      if(typeof v2[xx] ==  "string"){
+        const v2xx=v2[xx].trim()
+        const v2xxx=v2xx.replace(/[\r\n ]/g, "")
+        if (v2xxx.startsWith("{\\\"")){
+          v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
+        }else if (v2xx.startsWith("{")&&v2xx.endsWith("}")){
+          v2[xx]=superFormatX(v2[xx])
+        }else if (v2xx.startsWith("\"{")&&v2xx.endsWith("}\"")){
+          v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
+        }
+      }
+      if(typeof v2[xx] == "object"){
+        v2[xx]=superFormatX2(v2[xx])
+      }
+  }
+  return v2
+}
+function superFormatX(v:string|undefined):any {
+  if (!v) {
+    return v
+  }
+  try{
+    const v2=JSON.parse(v)
+    if (typeof v2 == "object"){
+      return superFormatX2(v2)
+    }
+  }catch (e){
+    return v; // 返回原始字符串
+  }
+  return v
+}
+function superFormat() {
+  const v = getEditor()?.getValue()
+  const v2={
+    "a": v
+  }
+  const v3=superFormatX2(v2)
+  updateValue(Json.objectBeautify(v3.a))
+  // getEditor()?.getAction("editor.action.formatDocument").run();
+}
 
 /**
  * 转义
@@ -224,6 +266,7 @@ App.enter((value: EnterValue) => {
     <div class="tools-list">
       <v-btn color="blue" size="small" variant="text" @click="onOpenHistoryPanel">历史</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="format">格式化</v-btn>
+      <v-btn color="blue" size="small" variant="text" @click="superFormat">超级格式化</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="compress">压缩</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="escape">转义</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="clearEscape">去转义</v-btn>
