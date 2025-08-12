@@ -52,9 +52,11 @@ function getEditor() {
 }
 
 function updateValue(value: string | undefined, needFormat: boolean = false) {
-  emit('update:value', value);
   if (needFormat) {
-    setTimeout(format, 300);
+    emit('update:value', Json.beautify(Json.compress(value)));
+    setTimeout(format, 100);
+  }else{
+    emit('update:value', value);
   }
 }
 
@@ -62,7 +64,7 @@ function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
 function formatAction() {
-  updateValue(Json.compress(getEditor()?.getValue()),true)
+  updateValue(Json.beautify(Json.compress(getEditor()?.getValue())))
 }
 function superFormatX2(v2:{[key: string]: any}):any {
   for (const xx in v2) {
@@ -118,7 +120,7 @@ function superFormat() {
   const v2=superFormatXX(v)
   if (v2){
     const v3=superFormatX2(v2)
-    updateValue(v3,true)
+    updateValue(Json.beautify(v3))
   }
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
