@@ -10,6 +10,7 @@ import { History } from "@/model";
 import { EditorType, ISelection, MonacoType, Selection } from "@/components/MonacoEditor.vue";
 import xmlToJson from '@/tools/xml/xmlToJson'
 import xmlToJsonConvertor from "@/tools/xml/xmlToJsonConvertor";
+import {objectBeautify} from "../tools/json";
 
 
 const HistoryPanel = defineAsyncComponent(() => import ('./HistoryPanel.vue'))
@@ -76,9 +77,24 @@ function superFormatX2(v2:{[key: string]: any}):any {
           v2[xx]=superFormatX(v2[xx])
         }else if (v2xx.startsWith("\"{")&&v2xx.endsWith("}\"")){
           v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
+        }else if (v2xx.startsWith("[{\\\"")|| (v2xx.startsWith("[\\\""))) {
+          v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
+        }else if (v2xx.startsWith("[")&&v2xx.endsWith("]")){
+          v2[xx]=superFormatX(v2[xx])
+        }else if (v2xx.startsWith("\"[")&&v2xx.endsWith("]\"")){
+          v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
         }
       }
-      if(typeof v2[xx] == "object"){
+      if (Array.isArray(v2[xx])){
+        v2[xx]=v2[xx].map((item:any)=>{
+          if (typeof item == "object"){
+            return superFormatX2(item)
+          }else if (typeof item == "string"){
+            return superFormatX(item)
+          }
+          return item
+        })
+      }else if(typeof v2[xx] == "object"){
         v2[xx]=superFormatX2(v2[xx])
       }
   }
@@ -120,7 +136,7 @@ function superFormat() {
   const v2=superFormatXX(v)
   if (v2){
     const v3=superFormatX2(v2)
-    updateValue(Json.beautify(v3))
+    updateValue(Json.objectBeautify(v3),true)
   }
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
