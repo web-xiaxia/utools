@@ -61,16 +61,18 @@ function updateValue(value: string | undefined, needFormat: boolean = false) {
 function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
+function formatAction() {
+  updateValue(Json.compress(getEditor()?.getValue()),true)
+}
 function superFormatX2(v2:{[key: string]: any}):any {
   for (const xx in v2) {
       if(typeof v2[xx] ==  "string"){
         const v2xx=v2[xx].trim()
-        const v2xxx=v2xx.replace(/[\r\n ]/g, "").trim()
-        if (v2xxx.startsWith("{\\\"")){
+        if (v2xx.startsWith("{\\\"")){
           v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
-        }else if (v2xxx.startsWith("{")&&v2xx.endsWith("}")){
+        }else if (v2xx.startsWith("{")&&v2xx.endsWith("}")){
           v2[xx]=superFormatX(v2[xx])
-        }else if (v2xxx.startsWith("\"{")&&v2xx.endsWith("}\"")){
+        }else if (v2xx.startsWith("\"{")&&v2xx.endsWith("}\"")){
           v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
         }
       }
@@ -109,20 +111,14 @@ function superFormatXX(v:string|undefined):any {
   return null
 }
 function superFormat() {
-  const v = getEditor()?.getValue()
-  if (v?.length==0){
-    return
-  }
-  if (v?.trim().length==0){
-    return
-  }
-  if (v?.replace(/[\r\n ]/g, "").trim().length==0){
+  const v = Json.compress(getEditor()?.getValue())
+  if (!v){
     return
   }
   const v2=superFormatXX(v)
   if (v2){
-    const v3=superFormatX2(v)
-    updateValue(Json.objectBeautify(v3))
+    const v3=superFormatX2(v2)
+    updateValue(v3,true)
   }
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
@@ -288,7 +284,7 @@ App.enter((value: EnterValue) => {
 
     <div class="tools-list">
       <v-btn color="blue" size="small" variant="text" @click="onOpenHistoryPanel">历史</v-btn>
-      <v-btn color="blue" size="small" variant="text" @click="format">格式化</v-btn>
+      <v-btn color="blue" size="small" variant="text" @click="formatAction">格式化</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="superFormat">超级格式化</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="compress">压缩</v-btn>
       <v-btn color="blue" size="small" variant="text" @click="escape">转义</v-btn>
