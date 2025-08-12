@@ -65,12 +65,12 @@ function superFormatX2(v2:{[key: string]: any}):any {
   for (const xx in v2) {
       if(typeof v2[xx] ==  "string"){
         const v2xx=v2[xx].trim()
-        const v2xxx=v2xx.replace(/[\r\n ]/g, "")
+        const v2xxx=v2xx.replace(/[\r\n ]/g, "").trim()
         if (v2xxx.startsWith("{\\\"")){
           v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
-        }else if (v2xx.startsWith("{")&&v2xx.endsWith("}")){
+        }else if (v2xxx.startsWith("{")&&v2xx.endsWith("}")){
           v2[xx]=superFormatX(v2[xx])
-        }else if (v2xx.startsWith("\"{")&&v2xx.endsWith("}\"")){
+        }else if (v2xxx.startsWith("\"{")&&v2xx.endsWith("}\"")){
           v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
         }
       }
@@ -94,6 +94,20 @@ function superFormatX(v:string|undefined):any {
   }
   return v
 }
+function superFormatXX(v:string|undefined):any {
+  if (!v) {
+    return null
+  }
+  try{
+    const v2=JSON.parse(v)
+    if (typeof v2 == "object"){
+      return superFormatX2(v2)
+    }
+  }catch (e){
+    return null; // 返回原始字符串
+  }
+  return null
+}
 function superFormat() {
   const v = getEditor()?.getValue()
   if (v?.length==0){
@@ -105,12 +119,11 @@ function superFormat() {
   if (v?.replace(/[\r\n ]/g, "").trim().length==0){
     return
   }
-
-  const v2={
-    "a": v
+  const v2=superFormatXX(v)
+  if (v2){
+    const v3=superFormatX2(v)
+    updateValue(Json.objectBeautify(v3))
   }
-  const v3=superFormatX2(v2)
-  updateValue(Json.objectBeautify(v3.a))
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
 
