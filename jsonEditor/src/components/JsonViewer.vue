@@ -96,6 +96,16 @@ function superFormatX(v:string|undefined):any {
 }
 function superFormat() {
   const v = getEditor()?.getValue()
+  if (v?.length==0){
+    return
+  }
+  if (v?.trim().length==0){
+    return
+  }
+  if (v?.replace(/[\r\n ]/g, "").trim().length==0){
+    return
+  }
+
   const v2={
     "a": v
   }
