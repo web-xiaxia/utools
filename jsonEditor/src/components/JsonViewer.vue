@@ -54,7 +54,11 @@ function getEditor() {
 
 function updateValue(value: string | undefined, needFormat: boolean = false) {
   if (needFormat) {
-    emit('update:value', Json.beautify(Json.compress(value)));
+    if (canJson(value)){
+      emit('update:value', Json.beautify(Json.compress(value)));
+    }else {
+      emit('update:value', value);
+    }
     setTimeout(format, 100);
   }else{
     emit('update:value', value);
@@ -65,7 +69,7 @@ function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
 function formatAction() {
-  updateValue(Json.beautify(Json.compress(getEditor()?.getValue())))
+  updateValue(getEditor()?.getValue(), true);
 }
 function superFormatX2(v2:{[key: string]: any}):any {
   for (const xx in v2) {
@@ -114,26 +118,22 @@ function superFormatX(v:string|undefined):any {
   }
   return v
 }
-function superFormatXX(v:string|undefined):any {
+function canJson(v:string|undefined):any {
   if (!v) {
     return null
   }
   try{
-    const v2=JSON.parse(v)
-    if (typeof v2 == "object"){
-      return superFormatX2(v2)
-    }
+    return JSON.parse(v)
   }catch (e){
     return null; // 返回原始字符串
   }
-  return null
 }
 function superFormat() {
   const v = Json.compress(getEditor()?.getValue())
   if (!v){
     return
   }
-  const v2=superFormatXX(v)
+  const v2=canJson(v)
   if (v2){
     const v3=superFormatX2(v2)
     updateValue(Json.objectBeautify(v3),true)
