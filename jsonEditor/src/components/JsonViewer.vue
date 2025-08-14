@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, reactive, ref, watchEffect } from "vue";
+import {computed, defineAsyncComponent, nextTick, reactive, ref, watchEffect} from "vue";
 import * as Json from '../tools/json';
 import Base64 from "@/tools/base64";
 import Db from '@/tools/db';
 
-import App, { EnterValue } from '@/tools/app'
+import App, {EnterValue} from '@/tools/app'
 import MonacoEditor from './MonacoEditor.vue';
-import { History } from "@/model";
-import { EditorType, ISelection, MonacoType, Selection } from "@/components/MonacoEditor.vue";
+import {History} from "@/model";
+import {EditorType, ISelection, MonacoType, Selection} from "@/components/MonacoEditor.vue";
 import xmlToJson from '@/tools/xml/xmlToJson'
 import xmlToJsonConvertor from "@/tools/xml/xmlToJsonConvertor";
 import {objectBeautify} from "../tools/json";
@@ -54,13 +54,13 @@ function getEditor() {
 
 function updateValue(value: string | undefined, needFormat: boolean = false) {
   if (needFormat) {
-    if (canJson(value)){
+    if (canJson(value)) {
       emit('update:value', Json.beautify(Json.compress(value)));
-    }else {
+    } else {
       emit('update:value', value);
     }
     setTimeout(format, 100);
-  }else{
+  } else {
     emit('update:value', value);
   }
 }
@@ -68,75 +68,197 @@ function updateValue(value: string | undefined, needFormat: boolean = false) {
 function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
+
 function formatAction() {
   updateValue(getEditor()?.getValue(), true);
 }
-function superFormatX2(v2:{[key: string]: any}):any {
+
+function superFormatX2(v2: { [key: string]: any }): any {
   for (const xx in v2) {
-      if(typeof v2[xx] ==  "string"){
-        const v2xx=v2[xx].trim()
-        if (v2xx.startsWith("{\\\"")){
-          v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
-        }else if (v2xx.startsWith("{")&&v2xx.endsWith("}")){
-          v2[xx]=superFormatX(v2[xx])
-        }else if (v2xx.startsWith("\"{")&&v2xx.endsWith("}\"")){
-          v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
-        }else if (v2xx.startsWith("[{\\\"")|| (v2xx.startsWith("[\\\""))) {
-          v2[xx]=superFormatX(Json.clearEscape(v2[xx]))
-        }else if (v2xx.startsWith("[")&&v2xx.endsWith("]")){
-          v2[xx]=superFormatX(v2[xx])
-        }else if (v2xx.startsWith("\"[")&&v2xx.endsWith("]\"")){
-          v2[xx]=superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
+    if (typeof v2[xx] == "string") {
+      const v2xx = v2[xx].trim()
+      if (v2xx.startsWith("{\\\"")) {
+        v2[xx] = superFormatX(Json.clearEscape(v2[xx]))
+      } else if (v2xx.startsWith("{") && v2xx.endsWith("}")) {
+        v2[xx] = superFormatX(v2[xx])
+      } else if (v2xx.startsWith("\"{") && v2xx.endsWith("}\"")) {
+        v2[xx] = superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
+      } else if (v2xx.startsWith("[{\\\"") || (v2xx.startsWith("[\\\""))) {
+        v2[xx] = superFormatX(Json.clearEscape(v2[xx]))
+      } else if (v2xx.startsWith("[") && v2xx.endsWith("]")) {
+        v2[xx] = superFormatX(v2[xx])
+      } else if (v2xx.startsWith("\"[") && v2xx.endsWith("]\"")) {
+        v2[xx] = superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
+      } else if ((v2xx.includes("{") && v2xx.includes("}")) || (v2xx.includes("[") && v2xx.includes("]"))) {
+        // 处理嵌入式JSON对象或数组
+        v2[xx] = parseEmbeddedJson(v2xx);
+      }
+    }
+    if (Array.isArray(v2[xx])) {
+      v2[xx] = v2[xx].map((item: any) => {
+        if (typeof item == "object") {
+          return superFormatX2(item)
+        } else if (typeof item == "string") {
+          return superFormatX(item)
         }
-      }
-      if (Array.isArray(v2[xx])){
-        v2[xx]=v2[xx].map((item:any)=>{
-          if (typeof item == "object"){
-            return superFormatX2(item)
-          }else if (typeof item == "string"){
-            return superFormatX(item)
-          }
-          return item
-        })
-      }else if(typeof v2[xx] == "object"){
-        v2[xx]=superFormatX2(v2[xx])
-      }
+        return item
+      })
+    } else if (typeof v2[xx] == "object") {
+      v2[xx] = superFormatX2(v2[xx])
+    }
   }
   return v2
 }
-function superFormatX(v:string|undefined):any {
+
+// 修改函数：解析嵌入式JSON对象，支持数组和转义的JSON
+function parseEmbeddedJson(str: string): any[] {
+  const result: any[] = [];
+  let currentPos = 0;
+  let textBuffer = "";
+
+  while (currentPos < str.length) {
+    // 寻找下一个可能的JSON开始位置（对象或数组）
+    const jsonObjStartPos = str.indexOf("{", currentPos);
+    const jsonArrStartPos = str.indexOf("[", currentPos);
+
+    // 确定哪个先出现，对象还是数组
+    let jsonStartPos = -1;
+    let isArray = false;
+
+    if (jsonObjStartPos !== -1 && jsonArrStartPos !== -1) {
+      // 两者都找到，选择较早出现的
+      if (jsonObjStartPos < jsonArrStartPos) {
+        jsonStartPos = jsonObjStartPos;
+      } else {
+        jsonStartPos = jsonArrStartPos;
+        isArray = true;
+      }
+    } else if (jsonObjStartPos !== -1) {
+      // 只找到对象
+      jsonStartPos = jsonObjStartPos;
+    } else if (jsonArrStartPos !== -1) {
+      // 只找到数组
+      jsonStartPos = jsonArrStartPos;
+      isArray = true;
+    }
+
+    if (jsonStartPos === -1) {
+      // 没有找到JSON开始标记，将剩余文本添加到结果中
+      textBuffer += str.substring(currentPos);
+      break;
+    }
+
+    // 将JSON开始位置之前的文本添加到缓冲区
+    textBuffer += str.substring(currentPos, jsonStartPos);
+
+    // 查找匹配的JSON结束位置
+    let bracketCount = 1;
+    let jsonEndPos = jsonStartPos + 1;
+    const openChar = isArray ? '[' : '{';
+    const closeChar = isArray ? ']' : '}';
+
+    while (bracketCount > 0 && jsonEndPos < str.length) {
+      if (str[jsonEndPos] === openChar) {
+        bracketCount++;
+      } else if (str[jsonEndPos] === closeChar) {
+        bracketCount--;
+      }
+      jsonEndPos++;
+    }
+
+    if (bracketCount === 0) {
+      // 找到完整的JSON对象或数组
+      const jsonStr = str.substring(jsonStartPos, jsonEndPos);
+
+      // 添加之前的文本到结果
+      if (textBuffer) {
+        result.push(textBuffer);
+        textBuffer = "";
+      }
+
+      try {
+        // 尝试解析JSON
+        const jsonObj = JSON.parse(jsonStr);
+        result.push(jsonObj);
+      } catch (e) {
+        // 尝试解析可能被转义的JSON
+        try {
+          const unescapedStr = Json.clearEscape(jsonStr);
+          if (unescapedStr) {
+            const jsonObj = JSON.parse(unescapedStr);
+            result.push(jsonObj);
+          }
+        } catch (e2) {
+          // 如果仍然解析失败，将其作为普通文本处理
+          result.push(jsonStr);
+        }
+      }
+
+      currentPos = jsonEndPos;
+    } else {
+      // 没有找到匹配的结束括号，作为普通文本处理
+      textBuffer += str[jsonStartPos];
+      currentPos = jsonStartPos + 1;
+    }
+  }
+
+  // 添加剩余的文本
+  if (textBuffer) {
+    result.push(textBuffer);
+  }
+
+  return result;
+}
+
+function superFormatX(v: string | undefined): any {
   if (!v) {
     return v
   }
-  try{
-    const v2=JSON.parse(v)
-    if (typeof v2 == "object"){
+  try {
+    const v2 = JSON.parse(v)
+    if (typeof v2 == "object") {
       return superFormatX2(v2)
     }
-  }catch (e){
+  } catch (e) {
+    // 尝试检查是否包含嵌入式JSON对象或数组
+    if (((v.includes("{") && v.includes("}")) || (v.includes("[") && v.includes("]")))) {
+      return parseEmbeddedJson(v);
+    }
+    // 尝试处理转义的JSON
+    try {
+      const unescapedStr = Json.clearEscape(v);
+      if (unescapedStr) {
+        const jsonObj = JSON.parse(unescapedStr);
+        return superFormatX2(jsonObj);
+      }
+    } catch (e2) {
+      // 忽略错误
+    }
     return v; // 返回原始字符串
   }
   return v
 }
-function canJson(v:string|undefined):any {
+
+function canJson(v: string | undefined): any {
   if (!v) {
     return null
   }
-  try{
+  try {
     return JSON.parse(v)
-  }catch (e){
+  } catch (e) {
     return null; // 返回原始字符串
   }
 }
+
 function superFormat() {
   const v = Json.compress(getEditor()?.getValue())
-  if (!v){
+  if (!v) {
     return
   }
-  const v2=canJson(v)
-  if (v2){
-    const v3=superFormatX2(v2)
-    updateValue(Json.objectBeautify(v3),true)
+  const v2 = canJson(v)
+  if (v2) {
+    const v3 = superFormatX2(v2)
+    updateValue(Json.objectBeautify(v3), true)
   }
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
