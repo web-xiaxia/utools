@@ -73,6 +73,24 @@ function formatAction() {
   updateValue(getEditor()?.getValue(), true);
 }
 
+function hasEmbeddedJson(v: string | undefined): boolean {
+  if (!v) {
+    return false;
+  }
+
+  const xLeft = v.indexOf("{")
+  const xRight = v.indexOf("{")
+  if (xLeft !== -1 && xRight !== -1 && xLeft < xRight) {
+    return true;
+  }
+  const x2Left = v.indexOf("[")
+  const x2Right = v.indexOf("]")
+  if (x2Left !== -1 && x2Right !== -1 && x2Left < x2Right) {
+    return true;
+  }
+  return false
+}
+
 function superFormatX2(v2: { [key: string]: any }): any {
   for (const xx in v2) {
     if (typeof v2[xx] == "string") {
@@ -89,7 +107,7 @@ function superFormatX2(v2: { [key: string]: any }): any {
         v2[xx] = superFormatX(v2[xx])
       } else if (v2xx.startsWith("\"[") && v2xx.endsWith("]\"")) {
         v2[xx] = superFormatX(Json.clearEscape(v2[xx].substring(1, v2xx.length - 1)))
-      } else if ((v2xx.includes("{") && v2xx.includes("}")) || (v2xx.includes("[") && v2xx.includes("]"))) {
+      } else if (hasEmbeddedJson(v2xx)) {
         // 处理嵌入式JSON对象或数组
         v2[xx] = parseEmbeddedJson(v2xx);
       }
@@ -179,7 +197,7 @@ function parseEmbeddedJson(str: string): any[] {
       try {
         // 尝试解析JSON
         const jsonObj = JSON.parse(jsonStr);
-        result.push(jsonObj);
+        result.push(superFormatX2(jsonObj));
       } catch (e) {
         // 尝试解析可能被转义的JSON
         try {
@@ -221,7 +239,7 @@ function superFormatX(v: string | undefined): any {
     }
   } catch (e) {
     // 尝试检查是否包含嵌入式JSON对象或数组
-    if (((v.includes("{") && v.includes("}")) || (v.includes("[") && v.includes("]")))) {
+    if (hasEmbeddedJson(v)) {
       return parseEmbeddedJson(v);
     }
     // 尝试处理转义的JSON
@@ -259,6 +277,12 @@ function superFormat() {
   if (v2) {
     const v3 = superFormatX2(v2)
     updateValue(Json.objectBeautify(v3), true)
+  } else {
+    if (hasEmbeddedJson(v)) {
+      // 处理嵌入式JSON对象或数组
+      const v3 = parseEmbeddedJson(v);
+      updateValue(Json.objectBeautify(v3), true)
+    }
   }
   // getEditor()?.getAction("editor.action.formatDocument").run();
 }
