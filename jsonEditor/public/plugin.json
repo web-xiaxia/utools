@@ -32,6 +32,30 @@
                     "minLength": 2
                 }
             ]
+        },
+        {
+            "code": "Json编辑器SUPER",
+            "explain": "json编辑器SUPER",
+            "platform": [
+                "win32",
+                "darwin",
+                "linux"
+            ],
+            "cmds": [
+                "Json-Super",
+                {
+                    "type": "regex",
+                    "label": "JSON-SUPER",
+                    "match": "/.*{.*?}.*/i",
+                    "minLength": 2
+                },
+                {
+                    "type": "regex",
+                    "label": "JSON-SUPER",
+                    "match": "/.*\\[.*?\\].*/i",
+                    "minLength": 2
+                }
+            ]
         }
     ]
 }

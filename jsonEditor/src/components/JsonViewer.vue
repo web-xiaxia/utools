@@ -65,6 +65,19 @@ function updateValue(value: string | undefined, needFormat: boolean = false) {
   }
 }
 
+function updateValueSuper(value: string | undefined, needFormat: boolean = false) {
+  if (needFormat) {
+    if (canJson(value)) {
+      emit('update:value', Json.beautify(Json.compress(value)));
+    } else {
+      emit('update:value', value);
+    }
+    setTimeout(superFormat, 100);
+  } else {
+    emit('update:value', value);
+  }
+}
+
 function format() {
   getEditor()?.getAction("editor.action.formatDocument").run();
 }
@@ -416,9 +429,15 @@ function onEditorMounted(editor: EditorType, monaco: MonacoType) {
 
 App.enter((value: EnterValue) => {
   if (value.type === 'utools') {
+    // alert(JSON.stringify(value))
     const payload = value.data?.payload;
     if (payload && payload.toLowerCase() !== 'json' && payload !== '') {
-      updateValue(payload, true);
+      if(value.data?.code=="Json编辑器SUPER"){
+        updateValueSuper(payload, true);
+      }else {
+        updateValue(payload, true);
+      }
+
       setTimeout(() => Db.get()?.addHistory(payload), 500)
     }
   }
