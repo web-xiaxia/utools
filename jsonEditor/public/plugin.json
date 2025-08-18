@@ -16,15 +16,15 @@
     },
     "features": [
         {
-            "code": "Json编辑器",
-            "explain": "json编辑器",
+            "code": "JSON编辑器",
+            "explain": "JSON编辑器",
             "platform": [
                 "win32",
                 "darwin",
                 "linux"
             ],
             "cmds": [
-                "Json",
+                "JSON",
                 {
                     "type": "regex",
                     "label": "JSON",
@@ -34,15 +34,15 @@
             ]
         },
         {
-            "code": "Json编辑器SUPER",
-            "explain": "json编辑器SUPER",
+            "code": "JSON编辑器SUPER",
+            "explain": "JSON编辑器SUPER",
             "platform": [
                 "win32",
                 "darwin",
                 "linux"
             ],
             "cmds": [
-                "Json-Super",
+                "JSON-SUPER",
                 {
                     "type": "regex",
                     "label": "JSON-SUPER",
