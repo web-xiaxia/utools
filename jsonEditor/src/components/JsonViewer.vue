@@ -432,7 +432,7 @@ App.enter((value: EnterValue) => {
     // alert(JSON.stringify(value))
     const payload = value.data?.payload;
     if (payload && payload.toLowerCase() !== 'json' && payload !== '') {
-      if(value.data?.code=="Json编辑器SUPER"){
+      if(value.data?.code=="JSON编辑器SUPER"){
         updateValueSuper(payload, true);
       }else {
         updateValue(payload, true);
